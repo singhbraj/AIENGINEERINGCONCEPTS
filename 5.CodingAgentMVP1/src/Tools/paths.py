@@ -1,5 +1,6 @@
 from fnmatch import fnmatch
 from pathlib import Path
+from config.config import get_work_dir
 
 BLOCKED_PATHS_PATTERNS = [
 
