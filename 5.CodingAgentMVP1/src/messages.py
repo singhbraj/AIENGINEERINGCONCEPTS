@@ -1,56 +1,38 @@
 from typing import Any
 from langchain.messages import AIMessage, ToolMessage, SystemMessage, HumanMessage
 
-def user_input(text:str) -> str:
-    """
-    OpenAI style dict for user input.
-    """
-    return {
-        "role": "user",
-        "content": text
-    }
+def user_input(text: str) -> dict[str, str]:
+    """OpenAI style dict for user input"""
+    return { "role" : "user", "content": text}
 
 def last_ai_text(messages: list[Any]) -> str:
-    """Return text from the last AI message that is not a tool-call turn."""
     for message in reversed(messages):
         if not isinstance(message, AIMessage):
-            continue
+            continue 
         if getattr(message, "tool_calls", None):
-            continue
+            continue 
         content = message.content
         if isinstance(content, str):
-            return content
+            return content 
         if isinstance(content, list):
-            parts = []
-            for block in content:
-                if isinstance(block, str) and block:
-                    parts.append(block)
-                elif isinstance(block, dict) and block.get("type") == "text":
-                    text = block.get("text", "")
-                    if text:
-                        parts.append(text)
-            if parts:
-                return "\n".join(parts)
+            parts = [
+                block.get("text", "") for block in content if isinstance(block, dict) and block.get("type") == "text" 
+            ]
+            return "\n".join(part for part in parts if part)
     return ""
 
-
-def last_tool_text(messages:list[Any]) -> str:
-    """
-    Retuens the content of the most recent tool result - useful when the model skips a chat reply.
+def last_tool_text(messages: list[Any]) -> str:
+    """"
+    Returns the content of the most recent tool result - useful when the model skips a chat reply.
     """
     for message in reversed(messages):
         if isinstance(message, ToolMessage):
-            content = message.conten
+            content = message.content
             return content if isinstance(content, str) else str(content)
-    
     return ""
 
-def describe_messages(message) -> str:
-
-    """
-     Usefull for logging and debugging.
-    """
-
+def describe_message(message) -> str:
+    """Userful for logging and debugging"""
     role = type(message).__name__.replace("Message", "").lower()
     content = message.content
     preview = content if isinstance(content, str) else str(content)
@@ -58,13 +40,13 @@ def describe_messages(message) -> str:
     extra = ""
 
     if isinstance(message, AIMessage) and message.tool_calls:
-      names = ", ".join(call.get("name", "?") for call in message.tool_calls)
-      extra = f" (tool: {names})"
+        names = ", ".join(call.get("name", "?") for call in message.tool_calls)
+        extra = f" tools=[{names}]"
     if isinstance(message, ToolMessage):
-      extra = f" tool_call_id={message.tool_call_id}"
+        extra = f" tool_call_id={message.tool_call_id}"
     if isinstance(message, SystemMessage):
-      extra = " (system)"
+        extra = " (system)"
     if isinstance(message, HumanMessage):
-      extra = " (human)"
+        extra = " (human)"
     return f"{role}{extra}: {preview}"
-      
+

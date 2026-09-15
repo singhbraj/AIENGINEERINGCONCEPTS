@@ -3,45 +3,41 @@ from dotenv import load_dotenv
 from dataclasses import dataclass
 from langchain_openai import ChatOpenAI
 
+
 load_dotenv()
+
 
 @dataclass(frozen=True)
 class Provider:
     name: str
     env_var: str
-    is_free: bool
-    base_url: str | None
-    model:str
+    is_free: bool 
+    base_url: str | None 
+    model: str
 
-
-providers = [
-
-Provider(
-    "OpenAI",
-    "OPENAI_API_KEY",
-    True,
-    None,
-    "gpt-4o-mini"
-),
-
+PROVIDERS = [
+    Provider(
+        "OpenAI",
+        "OPENAI_API_KEY",
+        False,
+        None,
+        "gpt-4o-mini",
+    )
 ]
 
-
-def select_provider(name: str) -> Provider:
-    for provider in providers:
+def select_provider() -> Provider:
+    for provider in PROVIDERS:
         if os.getenv(provider.env_var):
             return provider
-    raise ValueError(f"Provider {name} not found")
+    
+    raise RuntimeError("No provider found")
 
-
-def build_chat_model()-> tuple[ChatOpenAI, Provider]:
+def build_chat_model() -> tuple[ChatOpenAI, Provider]:
     provider = select_provider()
-    kwargs = {
+    kwargs: dict = {
         "model": provider.model,
         "api_key": os.getenv(provider.env_var),
-        "base_url": provider.base_url,
     }
-
-    if provider.base_url:
+    if provider.base_url is not None:
         kwargs["base_url"] = provider.base_url
     return ChatOpenAI(**kwargs), provider

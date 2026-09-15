@@ -1,45 +1,50 @@
-import os
-import subprocess
-from typing import Any
-from pydantic import Field
-from pathlib import Path
-from dataclasses import UTC, datetime
 import contextlib
+import os
 import signal
+import subprocess
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
+
 
 @dataclass
-class BackgroundJobs:
-    pid:int
-    command:str
-    started_at:str
-    log_path:str
-    proc:Any = Field(default=None, repr=False)
+class BackgroundJob:
+    pid: int
+    command: str
+    log_path: Path
+    started_at: str
+    proc: Any = field(default=None, repr=False)
 
-_Jobs:dict[int, BackgroundJobs] = ()
 
-def register(job:BackgroundJobs)->None:
-    _Jobs[job.pid] = job
+_JOBS: dict[int, BackgroundJob] = {}
 
-def get(pid:int)->BackgroundJobs|None:
-    return _Jobs.get(pid)
 
-def all_jobs()->list[BackgroundJobs]:
-    return list(_Jobs.values())
+def register(job: BackgroundJob) -> None:
+    _JOBS[job.pid] = job
 
-def remove(pid:int)->BackgroundJobs|None:
-    return _Jobs.pop(pid, None)
 
-def is_alive(pid:int)->bool:
+def get(pid: int) -> BackgroundJob | None:
+    return _JOBS.get(pid)
+
+
+def all_jobs() -> list[BackgroundJob]:
+    return list(_JOBS.values())
+
+
+def remove(pid: int) -> BackgroundJob | None:
+    return _JOBS.pop(pid, None)
+
+
+def is_alive(pid: int) -> bool:
     job = get(pid)
-
     if job is not None and job.proc is not None:
-        return job.proc.poll() is None # None means the process is still running
-
+        return job.proc.poll() is None
     try:
-        os.kill(pid, 0) # 0 means "check if the process exists", do not kill it 
-        return True
+        os.kill(pid, 0)
     except OSError:
         return False
+    return True
 
 
 def stop_pid(pid: int) -> str:
